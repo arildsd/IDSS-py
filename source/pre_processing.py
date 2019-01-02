@@ -1,6 +1,7 @@
 import pandas
 import numpy as np
 import re
+import pickle
 
 # GLOBAL CONSTANTS
 FILEPATH = r"../data/winemag-data-130k-v2.csv"
@@ -26,7 +27,7 @@ def words_to_embedding(words, embedding_dict):
         embeddings.append(word_to_embedding(word, embedding_dict))
     return embeddings
 
-def _load_embedding(filepath):
+def load_embedding(filepath):
     # Create a dictionary/map to store the word embeddings
     embeddings_index = {}
 
@@ -45,10 +46,11 @@ def _load_embedding(filepath):
     f.close()
     return embeddings_index
 
+
 if __name__ == '__main__':
     df = pandas.read_csv(FILEPATH)
-    embedding_dict = _load_embedding(EMBEDDING_FILE)
-    VALID_WORDS = [word for word in embedding_dict.keys()]
+    embedding_dict = load_embedding(EMBEDDING_FILE)
+    VALID_WORDS = set([word for word in embedding_dict.keys()])
 
     df["clean_text"] = df["description"].apply(lambda x : text_to_vector(x))
     print("Clean text df: ", df.head())
@@ -56,5 +58,42 @@ if __name__ == '__main__':
 
     df["text_embedding"] = df["clean_text"].apply(lambda x: words_to_embedding(x, embedding_dict))
     print("Embedding df: ", df.head())
+
+    # Group by wine type (variety)
+    wine_type_dict = {}
+    wine_type_price_dict = {}
+    wine_type_score_dict = {}
+    for index, row in df.iterrows():
+        if row["variety"] not in wine_type_dict.keys():
+            wine_type_dict[row["variety"]] = []
+            wine_type_price_dict[row["variety"]] = []
+            wine_type_score_dict[row["variety"]] = []
+        wine_type_dict[row["variety"]].append(row["text_embedding"])
+        wine_type_price_dict[row["variety"]].append(np.array(row["price"]))
+        wine_type_score_dict[row["variety"]].append(np.array(row["points"]))
+
+    # Combine docs to one doc for each wine type
+    for key in wine_type_dict.keys():
+        result = []
+        docs = wine_type_dict[key]
+        for doc in docs:
+            for word in doc:
+                result.append(word)
+        wine_type_dict[key] = result
+
+    # Make a final df with attributes for wine_type(variety), documents, median_price and average score.
+    wine_types = []
+    docs = []
+    median_price = []
+    average_score = []
+    for key in wine_type_dict.keys():
+        wine_types.append(key)
+        docs.append(wine_type_dict[key])
+        median_price.append(np.nanmedian(wine_type_price_dict[key]))
+        average_score.append(np.mean(wine_type_score_dict[key]))
+    wine_type_df = pandas.DataFrame({'variety': wine_types, 'docs': docs, "median_price": median_price,
+                                     "average_score": average_score})
+
+    wine_type_df.to_pickle("../output/wine_reviews")
 
 
