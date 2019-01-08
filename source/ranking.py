@@ -12,7 +12,7 @@ ALPHA = 0.5 # How much weight is given to the search terms vs rating
 def _get_args():
     """
     The arguments should be given in the order and format specified here:
-    (String)(word1;word2;...;wordN) search words, (Float) lower price bound, (Float) higher price bound.
+    (String)(word1;word2;...;wordN) search words <space> (Float) lower price bound <space> (Float) higher price bound.
 
 
     :return: A list with the search words and price bounds
@@ -80,13 +80,27 @@ if __name__ == '__main__':
     distance_dict = max_min_normalize(distance_dict)
     score_dict = max_min_normalize(score_dict, maximum=100, minimum=80)
 
+    # Make low a value in the dict correspond to a high rated wine type
+    for key in score_dict.keys():
+        score_dict[key] = 1 - score_dict[key]
+
     result_dict = {}
     for key in distance_dict.keys():
         result_dict[key] = (ALPHA*distance_dict[key] + (1-ALPHA)*score_dict[key])/2
     sorted_d = sorted(result_dict.items(), key=lambda x: x[1])
-    print(sorted_d)
 
-
+    # Print to frontend
+    for i in range(3):
+        line = str(sorted_d[i][0]) + ";"
+        selected_row = None
+        for index, row in df.iterrows():
+            if row["variety"] == sorted_d[i]:
+                selected_row = row
+                break
+        line += str(row["median_price"]) + ";"
+        line += str(row["average_score"])
+        print(line)
+    
 
 
 
