@@ -7,7 +7,7 @@ from source.pre_processing import load_embedding
 
 EMBEDDING_FILE = r"../data/glove.6B.100d.txt"
 DATA_FILE = r"../output/wine_reviews"
-ALPHA = 0.0 # How much weight is given to the search terms vs rating
+ALPHA = 0.5 # How much weight is given to the search terms vs rating
 
 def _get_args():
     """
