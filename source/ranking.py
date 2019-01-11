@@ -7,7 +7,7 @@ from source.pre_processing import load_embedding
 
 EMBEDDING_FILE = r"../data/glove.6B.100d.txt"
 DATA_FILE = r"../output/wine_reviews"
-ALPHA = 0.5 # How much weight is given to the search terms vs rating
+ALPHA = 0.0 # How much weight is given to the search terms vs rating
 
 def _get_args():
     """
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     for row in df.iterrows():
         # Filter for price
         median_price = row[1]["median_price"]
-        if median_price < lower_bound or median_price > higher_bound:
+        if median_price < lower_bound or median_price > higher_bound or pandas.isna(median_price):
             continue
         else:
             distance_dict[row[1]["variety"]] = multiple_distance(row[1]["docs"], word_embeddings)
@@ -94,11 +94,12 @@ if __name__ == '__main__':
         line = str(sorted_d[i][0]) + ";"
         selected_row = None
         for index, row in df.iterrows():
-            if row["variety"] == sorted_d[i]:
+            if row["variety"] == sorted_d[i][0]:
                 selected_row = row
                 break
-        line += str(row["median_price"]) + ";"
-        line += str(row["average_score"])
+
+        line += str(selected_row["median_price"]) + ";"
+        line += str(selected_row["average_score"])
         print(line)
     
 
